@@ -7,8 +7,6 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
 
-
-
 namespace ITSupportBot.Services
 {
     public class AzureOpenAIService
@@ -24,16 +22,22 @@ namespace ITSupportBot.Services
 
         public async Task<string> GetOpenAIResponse(string userQuestion)
         {
-            string systemMessage = "You are an intelligent assistant designed to provide informative and helpful responses to user queries. When a user asks a question or gives a command, generate a response that addresses their input clearly and accurately.\r\n\r\nExample Inputs and Outputs:\r\nuser: \"Can you help me with uploading a document?\"\r\nassistant: \"Sure, you can upload your document by following these steps...\"\r\n\r\nuser: \"How do I send an email through Outlook?\"\r\nassistant: \"To send an email through Outlook, you need to...\"\r\n\r\nuser: \"What should I do to report an IT issue?\"\r\nassistant: \"To report an IT issue, you can...\"\r\n\r\nNow, please provide an informative response to the following input:\r\n";
+            string systemMessage = "You are an intelligent assistant. Respond with JSON containing 'message' and a 'suggestions' array. Example: { \"message\": \"Here is the information you requested...\", \"suggestions\": [\"Forward to Finance\", \"Contact IT Support\", \"Send to HR\",\"Request Facilities Assistance\", \"Request Food and bverages\"] }.";
+
             try
             {
                 OpenAIClient client = new(new Uri(_configuration["AzureOpenAIEndpoint"]), new AzureKeyCredential(_configuration["AzureOpenAIKey"]));
                 ChatCompletionsOptions completionsOptions = new ChatCompletionsOptions()
                 {
-                    Messages = { new ChatMessage(ChatRole.System, systemMessage), new ChatMessage(ChatRole.User, userQuestion) },
-                    Temperature = (float)0,
-                    MaxTokens = 60, // Adjusted token limit
-                    NucleusSamplingFactor = (float)1,
+                    Messages = {
+                new ChatMessage(ChatRole.System, systemMessage),
+                new ChatMessage(ChatRole.User, "Example Input: Can you help me with payroll issues?"),
+                new ChatMessage(ChatRole.Assistant, "{ \"message\": \"Please contact the Finance department for payroll assistance.\", \"suggestions\": \"Forward to Finance\"}"),
+                new ChatMessage(ChatRole.User, userQuestion)
+            },
+                    Temperature = 0.0f,
+                    MaxTokens = 150,
+                    NucleusSamplingFactor = 1,
                     FrequencyPenalty = 0,
                     PresencePenalty = 0
                 };
@@ -44,9 +48,11 @@ namespace ITSupportBot.Services
             }
             catch (Exception e)
             {
-                _logger.LogInformation($"Some Error Occurred in AzureOpenAIService.GetOpenAIResponse with error Message: {e.Message}");
+                _logger.LogError($"Error in AzureOpenAIService.GetOpenAIResponse: {e.Message}");
                 return null;
             }
         }
+
+
     }
 }

@@ -31,7 +31,8 @@ namespace ITSupportBot.Dialogs
             AddDialog(new TextPrompt(nameof(TextPrompt)));
             AddDialog(new NumberDialog());
             AddDialog(new TextPrompt("HelpQueryPrompt"));
-            AddDialog(new ConfirmPrompt(nameof(ConfirmPrompt)));
+            AddDialog(new IntentHandlingDialog(_AzureOpenAIService));
+            
 
             InitialDialogId = nameof(WaterfallDialog);
         }
@@ -59,11 +60,10 @@ namespace ITSupportBot.Dialogs
         {
             string userQuestion = (string)stepContext.Result;
 
-            var response = await _AzureOpenAIService.GetOpenAIResponse(userQuestion);
-            await stepContext.Context.SendActivityAsync(MessageFactory.Text(response), cancellationToken);
-
-            return await stepContext.PromptAsync(nameof(ConfirmPrompt), new PromptOptions { Prompt = MessageFactory.Text("Was this information helpful? (yes/no)") }, cancellationToken);
+            // Call the IntentHandlingDialog with the user's question
+            return await stepContext.BeginDialogAsync(nameof(IntentHandlingDialog), userQuestion, cancellationToken);
         }
+
 
         private async Task<DialogTurnResult> FinalStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
